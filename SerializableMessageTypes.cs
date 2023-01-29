@@ -12,12 +12,7 @@ namespace AffenCode
         
         static SerializableMessageTypes()
         {
-            var sw = Stopwatch.StartNew();
-            
             Types = AssembliesTypes.GetTypes().Where(IsSerializableMessageType);
-            
-            sw.Stop();
-            Debug.Log("SerializableMessageTypes: " + sw.Elapsed);
         }
 
         private static bool IsSerializableMessageType(this Type type) => typeof(SerializableMessage).IsAssignableFrom(type);

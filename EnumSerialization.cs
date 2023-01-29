@@ -13,7 +13,6 @@ namespace AffenCode
 
         static EnumSerialization()
         {
-            var sw = Stopwatch.StartNew();
             var types = AssembliesTypes.GetTypes().Where(IsEnum);
 
             ushort index = 0;
@@ -23,8 +22,6 @@ namespace AffenCode
                 TypeByTypeIndex.Add(index, enumType);
                 index++;
             }
-            sw.Stop();
-            Debug.Log("EnumSerialization: " + sw.Elapsed);
         }
 
         public static ushort GetEnumTypeIndex(Type enumType)

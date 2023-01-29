@@ -13,13 +13,8 @@ namespace AffenCode
 
         static AssembliesTypes()
         {
-            var sw = Stopwatch.StartNew();
-            
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             Types = assemblies.SelectMany(x => x.GetTypes());
-
-            sw.Stop();
-            Debug.Log("AssembliesTypes: " + sw.Elapsed);
         }
 
         public static IEnumerable<Type> GetTypes() => Types;
