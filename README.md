@@ -47,9 +47,15 @@ Debug.Log(result.StringValue);
 
 # Performance
 
-Initialization of the plugin ~90ms.
-Serialization: ~90ms.
-Deserialization ~3ms.
+* Initialization of the plugin ~90ms.
+
+* First Serialization: ~90ms.
+
+* First Deserialization ~3ms.
+
+* Second Serialization: <1ms.
+
+* Second Deserialization: <1ms.
 
 # Supported Types
 
