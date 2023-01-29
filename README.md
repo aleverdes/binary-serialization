@@ -45,6 +45,12 @@ var result = SerializableMessage.Deserialize<TestSerializableMessage>(bytes);
 Debug.Log(result.StringValue);
 ```
 
+Unknown type deserialization:
+
+```csharp
+object unknownTypeDeserialization = SerializableMessage.Deserialize(bytes);
+```
+
 # Performance
 
 * Initialization: ~200ms.
