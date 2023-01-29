@@ -47,7 +47,7 @@ Debug.Log(result.StringValue);
 
 # Performance
 
-* Initialization: 200ms.
+* Initialization: ~200ms.
 * First SerializableMessage Type Serialization: ~5ms.
 * First SerializableMessage Type Deserialization ~5ms.
 * Second SerializableMessage Type Serialization: <1ms.
