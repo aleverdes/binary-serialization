@@ -450,6 +450,18 @@ namespace AffenCode
             return array;
         }
 
+        public static object Deserialize(byte[] bytes)
+        {
+            var ms = new MemoryStream(bytes);
+            var br = new BinaryReader(ms);
+
+            var serializableMessageType = GetSerializableMessageType(br.ReadInt32());
+            
+            var serializableMessage = Activator.CreateInstance(serializableMessageType);
+            Deserialize(ms, br, serializableMessage, serializableMessageType);
+            return serializableMessage;
+        }
+
         public static T Deserialize<T>(byte[] bytes) where T : SerializableMessage, new()
         {
             var ms = new MemoryStream(bytes);
@@ -462,9 +474,13 @@ namespace AffenCode
             }
 
             var serializableMessage = new T();
-            
-            var fieldInfos = FieldInfos[serializableMessageType];
+            Deserialize(ms, br, serializableMessage, typeof(T));
+            return serializableMessage;
+        }
 
+        private static void Deserialize(MemoryStream ms, BinaryReader br, object serializableMessage, Type serializableMessageType)
+        {
+            var fieldInfos = FieldInfos[serializableMessageType];
             foreach (var fieldInfo in fieldInfos)
             {
                 object value = null;
@@ -788,8 +804,6 @@ namespace AffenCode
             
             ms.Dispose();
             br.Dispose();
-
-            return serializableMessage;
         }
         
         private static int GetSerializableMessageTypeIndex(object serializableMessage)

@@ -128,8 +128,13 @@ public class SerializationTests
         
         // Second Deserialization
         sw = Stopwatch.StartNew();
-        var secondDeserialization = SerializableMessage.Deserialize<TestSerializableMessage>(firstSerialization);
+        var secondDeserialization = SerializableMessage.Deserialize<TestSerializableMessage>(secondSerialization);
         Debug.Log("Second Deserialization: " + sw.Elapsed);
+        
+        // Object Deserialization
+        sw = Stopwatch.StartNew();
+        var unknownTypeDeserialization = SerializableMessage.Deserialize(secondSerialization);
+        Debug.Log("Unknown Type Deserialization: " + sw.Elapsed);
         
         // Clear
         firstSerialization = null;
