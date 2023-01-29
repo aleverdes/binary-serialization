@@ -12,8 +12,8 @@ namespace AffenCode
 {
     public abstract class SerializableMessage
     {
-        private static readonly Dictionary<Type, int> TypeIndexByType = new Dictionary<Type, int>();
-        private static readonly Dictionary<int, Type> TypeByTypeIndex = new Dictionary<int, Type>();
+        private static readonly Dictionary<Type, int> SerializableTypeIndexByType = new Dictionary<Type, int>();
+        private static readonly Dictionary<int, Type> SerializableTypeByTypeIndex = new Dictionary<int, Type>();
         
         private static readonly Dictionary<Type, ushort> EnumTypeIndexByType = new Dictionary<Type, ushort>();
         private static readonly Dictionary<ushort, Type> EnumTypeByTypeIndex = new Dictionary<ushort, Type>();
@@ -31,8 +31,8 @@ namespace AffenCode
             for (int i = 0; i < serializableMessageTypes.Length; i++)
             {
                 var type = serializableMessageTypes[i];
-                TypeIndexByType.Add(type, i);
-                TypeByTypeIndex.Add(i, type);
+                SerializableTypeIndexByType.Add(type, i);
+                SerializableTypeByTypeIndex.Add(i, type);
                 FieldInfos[type] = InitializeFieldInfos(type);
 
                 foreach (var fieldInfo in FieldInfos[type])
@@ -461,7 +461,7 @@ namespace AffenCode
             var serializableMessageType = GetSerializableMessageType(br.ReadInt32());
             if (serializableMessageType != typeof(T))
             {
-                throw new ArgumentException("Invalid struct Type: target is " + typeof(T) + ", but binary message type is " + serializableMessageType);
+                throw new ArgumentException("Invalid SerializableMessage Type: target is " + typeof(T) + ", but binary message type is " + serializableMessageType);
             }
 
             var serializableMessage = new T();
@@ -797,12 +797,12 @@ namespace AffenCode
         
         private static int GetSerializableMessageTypeIndex(object serializableMessage)
         {
-            return TypeIndexByType[serializableMessage.GetType()];
+            return SerializableTypeIndexByType[serializableMessage.GetType()];
         }
 
         private static Type GetSerializableMessageType(int serializableMessageTypeIndex)
         {
-            return TypeByTypeIndex[serializableMessageTypeIndex];
+            return SerializableTypeByTypeIndex[serializableMessageTypeIndex];
         }
         
         private static bool IsSerializableMessageType(Type type) => typeof(SerializableMessage).IsAssignableFrom(type);
