@@ -1,40 +1,60 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace AffenCode
 {
     public abstract class SerializableMessage
     {
-        private static readonly Dictionary<Type, ushort> TypeIndexByType = new Dictionary<Type, ushort>();
-        private static readonly Dictionary<ushort, Type> TypeByTypeIndex = new Dictionary<ushort, Type>();
+        private static readonly Dictionary<Type, int> TypeIndexByType = new Dictionary<Type, int>();
+        private static readonly Dictionary<int, Type> TypeByTypeIndex = new Dictionary<int, Type>();
         
+        private static readonly Dictionary<Type, ushort> EnumTypeIndexByType = new Dictionary<Type, ushort>();
+        private static readonly Dictionary<ushort, Type> EnumTypeByTypeIndex = new Dictionary<ushort, Type>();
+
         private static readonly Dictionary<Type, FieldInfo[]> FieldInfos = new Dictionary<Type, FieldInfo[]>();
 
         static SerializableMessage()
         {
-            var serializableMessageTypes = SerializableMessageTypes.Types.OrderBy(x => x.FullName);
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var types = assemblies.SelectMany(x => x.GetTypes());
+            var serializableMessageTypes = types.Where(IsSerializableMessageType).OrderBy(x => x.FullName).ToArray();
 
-            ushort index = 0;
-            foreach (var serializableMessageType in serializableMessageTypes)
+            ushort enumIndex = 0;
+            
+            for (int i = 0; i < serializableMessageTypes.Length; i++)
             {
-                TypeIndexByType.Add(serializableMessageType, index);
-                TypeByTypeIndex.Add(index, serializableMessageType);
-                index++;
+                var type = serializableMessageTypes[i];
+                TypeIndexByType.Add(type, i);
+                TypeByTypeIndex.Add(i, type);
+                FieldInfos[type] = InitializeFieldInfos(type);
+
+                foreach (var fieldInfo in FieldInfos[type])
+                {
+                    var fieldType = fieldInfo.FieldType;
+                    if (fieldType.IsEnum)
+                    {
+                        EnumTypeByTypeIndex[enumIndex] = fieldType;
+                        EnumTypeIndexByType[fieldType] = enumIndex;
+                        enumIndex++;
+                    }
+                }
             }
         }
         
         public byte[] Serialize()
         {
-            var fieldInfos = GetFieldInfos(GetType());
+            var fieldInfos = FieldInfos[GetType()];
             var ms = new MemoryStream();
             var bw = new BinaryWriter(ms);
 
-            bw.Write(BitConverter.GetBytes(GetStructTypeIndex(this)));
+            bw.Write(BitConverter.GetBytes(GetSerializableMessageTypeIndex(this)));
             
             foreach (var fieldInfo in fieldInfos)
             {
@@ -418,7 +438,7 @@ namespace AffenCode
 #endif
                 else if (type.IsEnum)
                 {
-                    var enumTypeIndex = EnumSerialization.GetEnumTypeIndex(type);
+                    var enumTypeIndex = GetEnumTypeIndex(type);
                     var enumValueIndex = (int)value;
                     bw.Write(BitConverter.GetBytes(enumTypeIndex));
                     bw.Write(BitConverter.GetBytes(enumValueIndex));
@@ -438,15 +458,15 @@ namespace AffenCode
             var ms = new MemoryStream(bytes);
             var br = new BinaryReader(ms);
 
-            var structType = GetStructType(br.ReadUInt16());
-            if (structType != typeof(T))
+            var serializableMessageType = GetSerializableMessageType(br.ReadInt32());
+            if (serializableMessageType != typeof(T))
             {
-                throw new ArgumentException("Invalid struct Type: target is " + typeof(T) + ", but binary message type is " + structType);
+                throw new ArgumentException("Invalid struct Type: target is " + typeof(T) + ", but binary message type is " + serializableMessageType);
             }
 
-            var SerializableMessage = new T();
+            var serializableMessage = new T();
             
-            var fieldInfos = GetFieldInfos(structType);
+            var fieldInfos = FieldInfos[serializableMessageType];
 
             foreach (var fieldInfo in fieldInfos)
             {
@@ -763,37 +783,48 @@ namespace AffenCode
                 {
                     var enumTypeIndex = br.ReadUInt16();
                     var enumValue = br.ReadInt32();
-                    value = Convert.ChangeType(enumValue, Enum.GetUnderlyingType(EnumSerialization.GetEnumType(enumTypeIndex)));
+                    value = Convert.ChangeType(enumValue, Enum.GetUnderlyingType(GetEnumType(enumTypeIndex)));
                 }
                 
-                fieldInfo.SetValue(SerializableMessage, value);
+                fieldInfo.SetValue(serializableMessage, value);
             }
             
             ms.Dispose();
             br.Dispose();
 
-            return SerializableMessage;
+            return serializableMessage;
         }
         
-        private static ushort GetStructTypeIndex(object networkCommand)
+        private static int GetSerializableMessageTypeIndex(object serializableMessage)
         {
-            return TypeIndexByType[networkCommand.GetType()];
+            return TypeIndexByType[serializableMessage.GetType()];
         }
 
-        private static Type GetStructType(ushort networkCommandSerializedTypeIndex)
+        private static Type GetSerializableMessageType(int serializableMessageTypeIndex)
         {
-            return TypeByTypeIndex[networkCommandSerializedTypeIndex];
+            return TypeByTypeIndex[serializableMessageTypeIndex];
         }
         
-        private static FieldInfo[] GetFieldInfos(Type networkCommandType)
+        private static bool IsSerializableMessageType(Type type) => typeof(SerializableMessage).IsAssignableFrom(type);
+        
+        private static FieldInfo[] InitializeFieldInfos(Type serializableMessageType)
         {
-            if (!FieldInfos.TryGetValue(networkCommandType, out var fieldInfos))
+            if (!FieldInfos.TryGetValue(serializableMessageType, out var fieldInfos))
             {
-                FieldInfos[networkCommandType] = networkCommandType.GetFields().Where(x => x.DeclaringType == networkCommandType).ToArray();
-                fieldInfos = FieldInfos[networkCommandType];
+                FieldInfos[serializableMessageType] = serializableMessageType.GetFields();
+                fieldInfos = FieldInfos[serializableMessageType];
             }
-
             return fieldInfos;
+        }
+
+        public static ushort GetEnumTypeIndex(Type enumType)
+        {
+            return EnumTypeIndexByType[enumType];
+        }
+
+        public static Type GetEnumType(ushort enumTypeIndex)
+        {
+            return EnumTypeByTypeIndex[enumTypeIndex];
         }
     }
 }
