@@ -137,10 +137,6 @@ public class SerializationTests
         Debug.Log("Unknown Type Deserialization: " + sw.Elapsed);
         
         // Clear
-        firstSerialization = null;
-        firstDeserialization = null;
-        secondSerialization = null;
-        secondDeserialization = null;
         sw.Stop();
         sw = null;
     }
