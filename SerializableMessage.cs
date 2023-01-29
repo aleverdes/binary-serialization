@@ -44,13 +44,19 @@ namespace AffenCode
                 {
                     bw.Write((bool) value);
                 }
+                else if (type == typeof(bool[]))
+                {
+                    var typedValue = (bool[])value;
+                    var length = typedValue.Length;
+                    bw.Write(BitConverter.GetBytes(length));
+                    for (int i = 0; i < length; i++)
+                    {
+                        bw.Write(typedValue[i]);
+                    }
+                }
                 else if (type == typeof(byte))
                 {
                     bw.Write((byte) value);
-                }
-                else if (type == typeof(sbyte))
-                {
-                    bw.Write((sbyte) value);
                 }
                 else if (type == typeof(byte[]))
                 {
@@ -60,6 +66,20 @@ namespace AffenCode
                     for (int i = 0; i < length; i++)
                     {
                         bw.Write(typedValue[i]);
+                    }
+                }
+                else if (type == typeof(sbyte))
+                {
+                    bw.Write((sbyte) value);
+                }
+                else if (type == typeof(sbyte[]))
+                {
+                    var typedValue = (sbyte[])value;
+                    var length = typedValue.Length;
+                    bw.Write(BitConverter.GetBytes(length));
+                    for (int i = 0; i < length; i++)
+                    {
+                        bw.Write((sbyte) typedValue[i]);
                     }
                 }
                 else if (type == typeof(char))
@@ -436,18 +456,43 @@ namespace AffenCode
                 {
                     value = br.ReadBoolean();
                 }
+                else if (type == typeof(bool[]))
+                {
+                    var arrayLength = br.ReadInt32();
+                    var typedValue = new bool[arrayLength];
+                    for (int i = 0; i < arrayLength; i++)
+                    {
+                        typedValue[i] = br.ReadBoolean();
+                    }
+                    value = typedValue;
+                }
                 else if (type == typeof(byte))
                 {
                     value = br.ReadByte();
+                }
+                else if (type == typeof(byte[]))
+                {
+                    var arrayLength = br.ReadInt32();
+                    var typedValue = new byte[arrayLength];
+                    for (int i = 0; i < arrayLength; i++)
+                    {
+                        typedValue[i] = br.ReadByte();
+                    }
+                    value = typedValue;
                 }
                 else if (type == typeof(sbyte))
                 {
                     value = br.ReadSByte();
                 }
-                else if (type == typeof(byte[]))
+                else if (type == typeof(sbyte[]))
                 {
-                    var length = br.ReadInt32();
-                    value = br.ReadBytes(length);
+                    var arrayLength = br.ReadInt32();
+                    var typedValue = new sbyte[arrayLength];
+                    for (int i = 0; i < arrayLength; i++)
+                    {
+                        typedValue[i] = br.ReadSByte();
+                    }
+                    value = typedValue;
                 }
                 else if (type == typeof(char))
                 {

@@ -56,9 +56,11 @@ Deserialization ~3ms.
 C#:
 
 * bool
+* bool[]
 * byte
 * byte[]
 * sbyte
+* sbyte[]
 * char
 * char[]
 * double
