@@ -339,7 +339,7 @@ namespace AffenCode
                     bw.Write(BitConverter.GetBytes(typedValue.y));
                     bw.Write(BitConverter.GetBytes(typedValue.z));
                 }
-                else if (type == typeof(Vector3Int))
+                else if (type == typeof(Vector3Int[]))
                 {
                     var typedValue = (Vector3Int[])value;
                     var length = typedValue.Length;
@@ -359,7 +359,7 @@ namespace AffenCode
                     bw.Write(BitConverter.GetBytes(typedValue.width));
                     bw.Write(BitConverter.GetBytes(typedValue.height));
                 }
-                else if (type == typeof(Rect))
+                else if (type == typeof(Rect[]))
                 {
                     var typedValue = (Rect[])value;
                     var length = typedValue.Length;
