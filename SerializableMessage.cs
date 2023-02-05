@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using UnityEngine;
 
 namespace AffenCode
@@ -836,6 +837,18 @@ namespace AffenCode
         public static Type GetEnumType(ushort enumTypeIndex)
         {
             return EnumTypeByTypeIndex[enumTypeIndex];
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append(GetType());
+            sb.Append("\n");
+            foreach (var fieldInfo in FieldInfos[GetType()])
+            {
+                sb.Append($"    {fieldInfo.Name} = {fieldInfo.GetValue(this).ToString()}\n");
+            }
+            return sb.ToString();
         }
     }
 }
