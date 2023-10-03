@@ -13,10 +13,10 @@ Just copy a the source code of this repository into your Unity Project (Assets f
 
 # Usage
 
-Declare a class that inherits from `IBinarySerializable` and declare fields in it.
+Declare an any class and declare fields in it.
 
 ```csharp
-private class TestSerializableMessage : IBinarySerializable
+private class TestSerializableMessage
 {
     public int IntValue;
     public string StringValue;
@@ -25,7 +25,19 @@ private class TestSerializableMessage : IBinarySerializable
 }
 ```
 
-For serialization, use method `Serialize()`:
+For initialization of the default binary converters use `BinarySerializer.AddDefaultConverters()`:
+
+```csharp
+BinarySerializer.AddDefaultConverters();
+```
+
+For registration new types for binary serialization use `BinarySerializer.RegisterType<T>()`:
+
+```csharp
+BinarySerializer.RegisterType<TestSerializableMessage>()
+```
+
+For serialization, use method `BinarySerializer.Serialize(object)`:
 
 ```csharp
 var testSerializableMessage = new TestSerializableMessage()
@@ -35,7 +47,7 @@ var testSerializableMessage = new TestSerializableMessage()
     Vector3Value = Vector3.forward,
     EnumValue = TestEnum.Second
 };
-var bytes = testSerializableMessage.Serialize();
+var bytes = BinarySerializer.Serialize(testSerializableMessage);
 ```
 
 You can send the received array of bytes and, having received it, deserialize it using the `BinarySerializer.Deserialize(byte[] bytes)` function.
@@ -43,25 +55,50 @@ You can send the received array of bytes and, having received it, deserialize it
 ```csharp
 var result = BinarySerializer.Deserialize<TestSerializableMessage>(bytes);
 Debug.Log(result.StringValue);
-// or
-var alternative = bytes.Deserialize<TestSerializableMessage>();
 ```
 
 Unknown type deserialization:
 
 ```csharp
 object unknownTypeDeserialization = BinarySerializer.Deserialize(bytes);
-var alternative = bytes.Deserialize();
+```
+
+# Custom serializator/deserializator
+
+You need to declare class and inherit it from `IBinaryConverter` and add it to BinarySerializer's Converters:
+
+```csharp
+public class BoolBinaryConverter : IBinaryConverter
+{
+    public Type SerializationType => typeof(bool);
+
+    public void Serialize(object value, BinaryWriter bw)
+    {
+        bw.Write((bool) value);
+    }
+
+    public object Deserialize(BinaryReader br)
+    {
+        return br.ReadBoolean();
+    }
+}
+```
+```csharp
+// also add extension -converter for arrays of this type
+BinarySerializer.AddConverterWithExtensions<BoolBinaryConverter>();
 ```
 
 # Performance
 
-* Initialization: 00:00:00.3483286.
-* First Serialization: 00:00:00.3625601
-* First Deserialization: 00:00:00.0396115
-* Second Serialization: 00:00:00.0001273
-* Second Deserialization: 00:00:00.0001057
-* Unknown Type Deserialization: 00:00:00.0002011
+| State                        | Duration         |
+|------------------------------|------------------|
+| Adding default converters    | 00:00:00.0044790 |
+| Type registration            | 00:00:00.0019408 |
+| First Serialization          | 00:00:00.0050046 |
+| First Deserialization        | 00:00:00.0061455 |
+| Second Serialization         | 00:00:00.0001749 |
+| Second Deserialization       | 00:00:00.0001831 |
+| Unknown Type Deserialization | 00:00:00.0002780 |
 
 # Supported Types
 

@@ -15,10 +15,10 @@ namespace AleVerDes.BinarySerialization.Converters
         public void Serialize(object value, BinaryWriter bw)
         {
             var typedValue = (RectOffset) value;
-            bw.Write(BitConverter.GetBytes(typedValue.top));
-            bw.Write(BitConverter.GetBytes(typedValue.right));
-            bw.Write(BitConverter.GetBytes(typedValue.bottom));
             bw.Write(BitConverter.GetBytes(typedValue.left));
+            bw.Write(BitConverter.GetBytes(typedValue.right));
+            bw.Write(BitConverter.GetBytes(typedValue.top));
+            bw.Write(BitConverter.GetBytes(typedValue.bottom));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

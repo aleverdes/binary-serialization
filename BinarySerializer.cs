@@ -1,64 +1,55 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
+using AleVerDes.BinarySerialization.Converters;
+using AleVerDes.BinarySerialization.Converters.Extensions;
+using UnityEngine;
 
 namespace AleVerDes.BinarySerialization
 {
     public static class BinarySerializer
     {
-        private const bool CheckInitializationTime = true;
-        
         private static readonly TypeIndexDictionary CachedTypes = new();
         private static readonly Dictionary<Type, FieldInfo[]> CachedFieldInfos = new();
 
         private static readonly Dictionary<Type, Action<object, BinaryWriter>> SerializeMethods = new();
         private static readonly Dictionary<Type, Func<BinaryReader, object>> DeserializeMethods = new();
 
+        private static int _typeIndex;
+
         static BinarySerializer()
         {
-            Stopwatch sw;
-            if (CheckInitializationTime)
-            {
-                sw = Stopwatch.StartNew();
-            }
-            
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            var types = assemblies.SelectMany(x => x.GetTypes());
-            
-            var typeIndex = 0;
-            foreach (var type in types)
-            {
-                if (type != typeof(IBinarySerializable) && typeof(IBinarySerializable).IsAssignableFrom(type))
-                {
-                    CachedTypes.AddType(type, typeIndex);
-                    CachedFieldInfos[type] = InitializeFieldInfos(type);
-                    typeIndex++;
-                }
-                else if (type != typeof(IBinaryConverter) && typeof(IBinaryConverter).IsAssignableFrom(type))
-                {
-                    var converter = (IBinaryConverter) Activator.CreateInstance(type);
-                    AddConverter(converter);
-                }
-            }
-
-            if (CheckInitializationTime)
-            {
-                var message = "BinarySerializer.InitializationTime = " + sw.Elapsed;
-                sw.Stop();
-#if UNITY_2017_1_OR_NEWER
-                UnityEngine.Debug.Log(message);
-#else
-                Console.WriteLine(message);
-#endif
-                sw = null;
-            }
+            Reset();
         }
 
-        #region Registration of the serialization and deserialization methods
+        #region Public methods: Types registration
+
+        public static void RegisterType<T>() where T : class, new()
+        {
+            RegisterType(typeof(T));
+        }
+        
+        public static void RegisterType(Type type)
+        {
+            RegisterType(type, _typeIndex);
+            _typeIndex++;
+        }
+
+        public static void RegisterType<T>(int typeIndex) where T : class, new()
+        {
+            RegisterType(typeof(T), typeIndex);
+        }
+        
+        public static void RegisterType(Type type, int typeIndex)
+        {
+            CachedTypes.AddType(type, typeIndex);
+            CachedFieldInfos[type] = InitializeFieldInfos(type);
+        }
+        
+        #endregion
+
+        #region Public methods: Registration of the serialization and deserialization methods
 
         public static void AddConverter(IBinaryConverter converter)
         {
@@ -66,39 +57,49 @@ namespace AleVerDes.BinarySerialization
             DeserializeMethods[converter.SerializationType] = converter.Deserialize;
         }
 
-        #endregion
-
-        #region Private methods
-
-        private static FieldInfo[] InitializeFieldInfos(Type serializableMessageType)
+        public static void AddConverterWithExtensions<T>() where T : class, IBinaryConverter, new()
         {
-            if (!CachedFieldInfos.TryGetValue(serializableMessageType, out var fieldInfos))
-            {
-                CachedFieldInfos[serializableMessageType] = serializableMessageType.GetFields();
-                fieldInfos = CachedFieldInfos[serializableMessageType];
-            }
-            return fieldInfos;
+            AddConverter(new T());
+            AddConverter(new ArrayBinaryConverter<T>());
         }
-
-        private static void Serialize(Type type, object obj, BinaryWriter binaryWriter)
-        {
-            SerializeMethods[type](obj, binaryWriter);
-        }
-
-        private static object Deserialize(Type type, BinaryReader binaryReader)
-        {
-            return DeserializeMethods[type](binaryReader);
-        }
-
-        private static bool IsBinarySerializable(Type type) => typeof(IBinarySerializable).IsAssignableFrom(type);
-
-        #endregion
-
-        #region Serialization, deserialization and get info
         
-        public static byte[] Serialize(this IBinarySerializable binarySerializable)
+        public static void AddDefaultConverters()
         {
-            var binarySerializableType = binarySerializable.GetType();
+            AddConverterWithExtensions<BoolBinaryConverter>();
+            AddConverterWithExtensions<ByteBinaryConverter>();
+            AddConverterWithExtensions<CharBinaryConverter>();
+            AddConverterWithExtensions<DoubleBinaryConverter>();
+            AddConverterWithExtensions<FloatBinaryConverter>();
+            AddConverterWithExtensions<IntBinaryConverter>();
+            AddConverterWithExtensions<LongBinaryConverter>();
+            AddConverterWithExtensions<SByteBinaryConverter>();
+            AddConverterWithExtensions<ShortBinaryConverter>();
+            AddConverterWithExtensions<StringBinaryConverter>();
+            AddConverterWithExtensions<UIntBinaryConverter>();
+            AddConverterWithExtensions<ULongBinaryConverter>();
+            AddConverterWithExtensions<UShortBinaryConverter>();
+
+#if UNITY_5_3_OR_NEWER
+            AddConverterWithExtensions<ColorBinaryConverter>();
+            AddConverterWithExtensions<QuaternionBinaryConverter>();
+            AddConverterWithExtensions<RectBinaryConverter>();
+            AddConverterWithExtensions<RectIntBinaryConverter>();
+            AddConverterWithExtensions<RectOffsetBinaryConverter>();
+            AddConverterWithExtensions<Vector2BinaryConverter>();
+            AddConverterWithExtensions<Vector2IntBinaryConverter>();
+            AddConverterWithExtensions<Vector3BinaryConverter>();
+            AddConverterWithExtensions<Vector3IntBinaryConverter>();
+            AddConverterWithExtensions<Vector4BinaryConverter>();
+#endif
+        }
+
+        #endregion
+
+        #region Public methods: Serialization and deserialization
+        
+        public static byte[] Serialize(object obj)
+        {
+            var binarySerializableType = obj.GetType();
             
             var fieldInfos = CachedFieldInfos[binarySerializableType];
             var ms = new MemoryStream();
@@ -109,7 +110,7 @@ namespace AleVerDes.BinarySerialization
 
             foreach (var fieldInfo in fieldInfos)
             {
-                var value = fieldInfo.GetValue(binarySerializable);
+                var value = fieldInfo.GetValue(obj);
                 var type = fieldInfo.FieldType;
                 if (type.IsEnum)
                 {
@@ -130,7 +131,7 @@ namespace AleVerDes.BinarySerialization
             return array;
         }
         
-        public static object Deserialize(this byte[] bytes)
+        public static object Deserialize(byte[] bytes)
         {
             var ms = new MemoryStream(bytes);
             var br = new BinaryReader(ms);
@@ -144,7 +145,7 @@ namespace AleVerDes.BinarySerialization
             return binarySerializable;
         }
 
-        public static T Deserialize<T>(this byte[] bytes) where T : class, IBinarySerializable, new()
+        public static T Deserialize<T>(byte[] bytes) where T : class, new()
         {
             var ms = new MemoryStream(bytes);
             var br = new BinaryReader(ms);
@@ -182,20 +183,38 @@ namespace AleVerDes.BinarySerialization
             }
         }
 
-        public static string GetInfo(this IBinarySerializable binarySerializable)
+        #endregion
+
+        #region Private methods
+
+        private static FieldInfo[] InitializeFieldInfos(Type serializableMessageType)
         {
-            var type = binarySerializable.GetType();
-            var sb = new StringBuilder();
-            sb.Append(type);
-            sb.Append("\n");
-            foreach (var fieldInfo in CachedFieldInfos[type])
+            if (!CachedFieldInfos.TryGetValue(serializableMessageType, out var fieldInfos))
             {
-                sb.Append($"    {fieldInfo.Name} = {fieldInfo.GetValue(binarySerializable)}\n");
+                CachedFieldInfos[serializableMessageType] = serializableMessageType.GetFields();
+                fieldInfos = CachedFieldInfos[serializableMessageType];
             }
-            return sb.ToString();
+            return fieldInfos;
+        }
+
+        private static void Serialize(Type type, object obj, BinaryWriter binaryWriter)
+        {
+            SerializeMethods[type](obj, binaryWriter);
+        }
+
+        private static object Deserialize(Type type, BinaryReader binaryReader)
+        {
+            return DeserializeMethods[type](binaryReader);
         }
 
         #endregion
+
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void Reset()
+        {
+            _typeIndex = 0;
+        }
         
         private class TypeIndexDictionary
         {

@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace AleVerDes.BinarySerialization.Tests
 {
-    public class TestSerializableMessage : IBinarySerializable
+    public class TestSerializableMessage
     {
         public bool BoolValue;
         public bool[] BoolArray;
@@ -45,6 +45,8 @@ namespace AleVerDes.BinarySerialization.Tests
         public Rect[] RectArray;
         public RectInt RectIntValue;
         public RectInt[] RectIntArray;
+        public RectOffset RectOffsetValue;
+        public RectOffset[] RectOffsetArray;
         public Quaternion QuaternionValue;
         public Quaternion[] QuaternionArray;
         public Color ColorValue;

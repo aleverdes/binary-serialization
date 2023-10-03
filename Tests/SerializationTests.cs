@@ -1,6 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -12,6 +10,16 @@ namespace AleVerDes.BinarySerialization.Tests
         [Test]
         public void SerializeAndDeserialize()
         {
+            Stopwatch sw;
+            
+            sw = Stopwatch.StartNew();
+            BinarySerializer.AddDefaultConverters();
+            Debug.Log("Adding default converters: " + sw.Elapsed);
+            
+            sw = Stopwatch.StartNew();
+            BinarySerializer.RegisterType<TestSerializableMessage>();
+            Debug.Log("Test type registration: " + sw.Elapsed);
+            
             // Declaration of test serialization message
             var testSerializableMessage = new TestSerializableMessage()
             {
@@ -54,6 +62,8 @@ namespace AleVerDes.BinarySerialization.Tests
                 Vector3IntArray = new Vector3Int[] { new Vector3Int(1, 2, 3), new Vector3Int(3, 4, 5) },
                 RectValue = new Rect(0f, 0f, 640f, 480f),
                 RectArray = new Rect[] { new Rect(0f, 0f, 640f, 480f), new Rect(128f, 128f, 800f, 600f) },
+                RectOffsetValue = new RectOffset(1, 2, 3, 4),
+                RectOffsetArray = new [] { new RectOffset(1, 2, 3, 4), new RectOffset(5, 6, 7, 8)},
                 RectIntValue = new RectInt(0, 0, 640, 480),
                 RectIntArray = new RectInt[] { new RectInt(0, 0, 640, 480), new RectInt(128, 128, 800, 600) },
                 QuaternionValue = Quaternion.identity,
@@ -63,16 +73,16 @@ namespace AleVerDes.BinarySerialization.Tests
             };
 
             // First Serialization
-            var sw = Stopwatch.StartNew();
-            var firstSerialization = testSerializableMessage.Serialize();
+            sw = Stopwatch.StartNew();
+            var firstSerialization = BinarySerializer.Serialize(testSerializableMessage);
             Debug.Log("First Serialization: " + sw.Elapsed);
 
             // Log byte array
-            Debug.Log(firstSerialization.Aggregate("", (s, b) => s + BitConverter.ToString(new[] { b }) + " "));
+            // Debug.Log(firstSerialization.Aggregate("", (s, b) => s + BitConverter.ToString(new[] { b }) + " "));
 
             // First Deserialization
             sw = Stopwatch.StartNew();
-            var firstDeserialization = firstSerialization.Deserialize<TestSerializableMessage>();
+            var firstDeserialization = BinarySerializer.Deserialize<TestSerializableMessage>(firstSerialization);
             Debug.Log("First Deserialization: " + sw.Elapsed);
 
             // Asserts
@@ -117,6 +127,8 @@ namespace AleVerDes.BinarySerialization.Tests
             Assert.AreEqual(800, firstDeserialization.RectArray[1].width, "RectArray is wrong");
             Assert.AreEqual(640, firstDeserialization.RectIntValue.width, "RectIntValue is wrong");
             Assert.AreEqual(800, firstDeserialization.RectIntArray[1].width, "RectIntArray is wrong");
+            Assert.AreEqual(3, firstDeserialization.RectOffsetValue.top, "RectOffsetValue is wrong");
+            Assert.AreEqual(5, firstDeserialization.RectOffsetArray[1].left, "RectOffsetArray is wrong");
             Assert.AreEqual(0f, firstDeserialization.QuaternionValue.x, "QuaternionValue is wrong");
             Assert.AreEqual(1f, firstDeserialization.QuaternionArray[1].x, "QuaternionArray is wrong");
             Assert.AreEqual(1f, firstDeserialization.ColorValue.r, "ColorValue is wrong");
@@ -124,17 +136,17 @@ namespace AleVerDes.BinarySerialization.Tests
 
             // Second Serialization
             sw = Stopwatch.StartNew();
-            var secondSerialization = testSerializableMessage.Serialize();
+            var secondSerialization = BinarySerializer.Serialize(testSerializableMessage);
             Debug.Log("Second Serialization: " + sw.Elapsed);
 
             // Second Deserialization
             sw = Stopwatch.StartNew();
-            var secondDeserialization = secondSerialization.Deserialize<TestSerializableMessage>();
+            var secondDeserialization = BinarySerializer.Deserialize<TestSerializableMessage>(secondSerialization);
             Debug.Log("Second Deserialization: " + sw.Elapsed);
 
             // Object Deserialization
             sw = Stopwatch.StartNew();
-            var unknownTypeDeserialization = secondSerialization.Deserialize();
+            var unknownTypeDeserialization = BinarySerializer.Deserialize(secondSerialization);
             Debug.Log("Unknown Type Deserialization: " + sw.Elapsed);
 
             // Clear
