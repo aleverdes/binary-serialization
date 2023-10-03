@@ -28,7 +28,7 @@ namespace AleVerDes.BinarySerialization
             
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             var types = assemblies.SelectMany(x => x.GetTypes());
-
+            
             var typeIndex = 0;
             foreach (var type in types)
             {
@@ -41,8 +41,7 @@ namespace AleVerDes.BinarySerialization
                 else if (type != typeof(IBinaryConverter) && typeof(IBinaryConverter).IsAssignableFrom(type))
                 {
                     var converter = (IBinaryConverter) Activator.CreateInstance(type);
-                    AddSerializeMethod(converter.SerializationType, converter.Serialize);
-                    AddDeserializeMethod(converter.SerializationType, converter.Deserialize);
+                    AddConverter(converter);
                 }
             }
 
@@ -61,14 +60,10 @@ namespace AleVerDes.BinarySerialization
 
         #region Registration of the serialization and deserialization methods
 
-        public static void AddSerializeMethod(Type type, Action<object, BinaryWriter> method)
+        public static void AddConverter(IBinaryConverter converter)
         {
-            SerializeMethods[type] = method;
-        }
-
-        public static void AddDeserializeMethod(Type type, Func<BinaryReader, object> method)
-        {
-            DeserializeMethods[type] = method;
+            SerializeMethods[converter.SerializationType] = converter.Serialize;
+            DeserializeMethods[converter.SerializationType] = converter.Deserialize;
         }
 
         #endregion

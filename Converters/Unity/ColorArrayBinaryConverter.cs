@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace AleVerDes.BinarySerialization.Converters
@@ -10,6 +11,7 @@ namespace AleVerDes.BinarySerialization.Converters
     {
         public Type SerializationType => typeof(Color[]);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Serialize(object value, BinaryWriter bw)
         {
             var typedValue = (Color[])value;
@@ -24,6 +26,7 @@ namespace AleVerDes.BinarySerialization.Converters
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public object Deserialize(BinaryReader br)
         {
             var arrayLength = br.ReadInt32();

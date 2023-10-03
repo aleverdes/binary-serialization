@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace AleVerDes.BinarySerialization.Converters
@@ -10,6 +11,7 @@ namespace AleVerDes.BinarySerialization.Converters
     {
         public Type SerializationType => typeof(Rect);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Serialize(object value, BinaryWriter bw)
         {
             var typedValue = (Rect) value;
@@ -19,6 +21,7 @@ namespace AleVerDes.BinarySerialization.Converters
             bw.Write(BitConverter.GetBytes(typedValue.height));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public object Deserialize(BinaryReader br)
         {
             return new Rect(br.ReadSingle(), br.ReadSingle(), br.ReadSingle(), br.ReadSingle());
