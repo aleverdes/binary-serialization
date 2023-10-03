@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using AleVerDes.BinarySerialization.Converters;
 using AleVerDes.BinarySerialization.Converters.Extensions;
@@ -44,7 +46,7 @@ namespace AleVerDes.BinarySerialization
         public static void RegisterType(Type type, int typeIndex)
         {
             CachedTypes.AddType(type, typeIndex);
-            CachedFieldInfos[type] = InitializeFieldInfos(type);
+            InitializeFieldInfos(type);
         }
         
         #endregion
@@ -61,6 +63,7 @@ namespace AleVerDes.BinarySerialization
         {
             AddConverter(new T());
             AddConverter(new ArrayBinaryConverter<T>());
+            AddConverter(new ListBinaryConverter<T>());
         }
         
         public static void AddDefaultConverters()
@@ -112,15 +115,7 @@ namespace AleVerDes.BinarySerialization
             {
                 var value = fieldInfo.GetValue(obj);
                 var type = fieldInfo.FieldType;
-                if (type.IsEnum)
-                {
-                    var enumValueIndex = (int)value;
-                    bw.Write(BitConverter.GetBytes(enumValueIndex));
-                }
-                else
-                {
-                    Serialize(type, value, bw);
-                }
+                Serialize(type, value, bw);
             }
 
             var array = ms.ToArray();
@@ -169,16 +164,7 @@ namespace AleVerDes.BinarySerialization
             foreach (var fieldInfo in fieldInfos)
             {
                 var type = fieldInfo.FieldType;
-                object value;
-                if (type.IsEnum)
-                {
-                    var enumValue = binaryReader.ReadInt32();
-                    value = Convert.ChangeType(enumValue, Enum.GetUnderlyingType(type));
-                }
-                else
-                {
-                    value = Deserialize(type, binaryReader);
-                }
+                var value = Deserialize(type, binaryReader);
                 fieldInfo.SetValue(binarySerializable, value);
             }
         }
@@ -187,14 +173,32 @@ namespace AleVerDes.BinarySerialization
 
         #region Private methods
 
-        private static FieldInfo[] InitializeFieldInfos(Type serializableMessageType)
+        private static void InitializeFieldInfos(Type type)
         {
-            if (!CachedFieldInfos.TryGetValue(serializableMessageType, out var fieldInfos))
+            if (CachedFieldInfos.TryGetValue(type, out var fieldInfos))
             {
-                CachedFieldInfos[serializableMessageType] = serializableMessageType.GetFields();
-                fieldInfos = CachedFieldInfos[serializableMessageType];
+                return;
             }
-            return fieldInfos;
+            
+            CachedFieldInfos[type] = type.GetFields();
+            fieldInfos = CachedFieldInfos[type];
+
+            foreach (var fieldInfo in fieldInfos)
+            {
+                var fieldType = fieldInfo.FieldType;
+                if (fieldType.IsEnum)
+                {
+                    AddConverter(new EnumBinaryConverter(fieldType));
+                }
+                else if (fieldType.IsArray && fieldType.GetElementType()!.IsEnum)
+                {
+                    AddConverter(new EnumArrayBinaryConverter(fieldType.GetElementType()));
+                }
+                else if (typeof(IList).IsAssignableFrom(fieldType) && fieldType.GenericTypeArguments.Length > 0 && fieldType.GenericTypeArguments.First().IsEnum)
+                {
+                    AddConverter(new EnumListBinaryConverter(fieldType.GenericTypeArguments.First()));
+                }
+            }
         }
 
         private static void Serialize(Type type, object obj, BinaryWriter binaryWriter)
@@ -204,7 +208,15 @@ namespace AleVerDes.BinarySerialization
 
         private static object Deserialize(Type type, BinaryReader binaryReader)
         {
-            return DeserializeMethods[type](binaryReader);
+            try
+            {
+                return DeserializeMethods[type](binaryReader);
+            }
+            catch (InvalidCastException e)
+            {
+                Debug.LogError($"Invalid cast: {type} to {DeserializeMethods[type].Method.ReturnType}");
+                throw;
+            }
         }
 
         #endregion

@@ -102,58 +102,39 @@ BinarySerializer.AddConverterWithExtensions<BoolBinaryConverter>();
 
 # Supported Types
 
-C#:
+Primitive types:
 
 * bool
-* bool[]
 * byte
-* byte[]
 * sbyte
-* sbyte[]
 * char
-* char[]
 * double
-* double[]
 * short
-* short[]
 * ushort
-* ushort[]
 * int
-* int[]
 * uint
-* uint[]
 * long
-* long[]
 * ulong
-* ulong[]
 * float
-* float[]
 * string
-* string[]
-* enum
+* Enum
 
-Unity:
+Unity types:
 
 * Vector2
-* Vector2[]
 * Vector3
-* Vector3[]
 * Vector4
-* Vector4[]
 * Vector2Int
-* Vector2Int[]
 * Vector3Int
-* Vector3Int[]
 * Rect
-* Rect[]
 * RectInt
-* RectInt[]
 * RectOffset
-* RectOffset[]
 * Quaternion
-* Quaternion[]
 * Color
-* Color[]
+
+Collections of primitive and Unity types:
+* Array<T>
+* List<T>
 
 # License
 
