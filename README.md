@@ -13,10 +13,10 @@ Just copy a the source code of this repository into your Unity Project (Assets f
 
 # Usage
 
-Declare a class that inherits from SerializableMessage and declare fields in it.
+Declare a class that inherits from `IBinarySerializable` and declare fields in it.
 
 ```csharp
-private class TestSerializableMessage : SerializableMessage
+private class TestSerializableMessage : IBinarySerializable
 {
     public int IntValue;
     public string StringValue;
@@ -25,7 +25,7 @@ private class TestSerializableMessage : SerializableMessage
 }
 ```
 
-For serialization, use SerializableMessage's method `Serialize()`:
+For serialization, use method `Serialize()`:
 
 ```csharp
 var testSerializableMessage = new TestSerializableMessage()
@@ -38,26 +38,30 @@ var testSerializableMessage = new TestSerializableMessage()
 var bytes = testSerializableMessage.Serialize();
 ```
 
-You can send the received array of bytes and, having received it, deserialize it using the `NetworkMessage.Deserialize(byte[] bytes)` function.
+You can send the received array of bytes and, having received it, deserialize it using the `BinarySerializer.Deserialize(byte[] bytes)` function.
 
 ```csharp
-var result = SerializableMessage.Deserialize<TestSerializableMessage>(bytes);
+var result = BinarySerializer.Deserialize<TestSerializableMessage>(bytes);
 Debug.Log(result.StringValue);
+// or
+var alternative = bytes.Deserialize<TestSerializableMessage>();
 ```
 
 Unknown type deserialization:
 
 ```csharp
-object unknownTypeDeserialization = SerializableMessage.Deserialize(bytes);
+object unknownTypeDeserialization = BinarySerializer.Deserialize(bytes);
+var alternative = bytes.Deserialize();
 ```
 
 # Performance
 
-* Initialization: ~200ms.
-* First SerializableMessage Type Serialization: ~5ms.
-* First SerializableMessage Type Deserialization ~5ms.
-* Second SerializableMessage Type Serialization: <1ms.
-* Second SerializableMessage Type Deserialization: <1ms.
+* Initialization: 00:00:00.3483286.
+* First Serialization: 00:00:00.3625601
+* First Deserialization: 00:00:00.0396115
+* Second Serialization: 00:00:00.0001273
+* Second Deserialization: 00:00:00.0001057
+* Unknown Type Deserialization: 00:00:00.0002011
 
 # Supported Types
 

@@ -1,6 +1,10 @@
-public enum TestEnum
+
+namespace AleVerDes.BinarySerialization.Tests
 {
-    First,
-    Second,
-    Third 
+    public enum TestEnum
+    {
+        First,
+        Second,
+        Third
+    }
 }
