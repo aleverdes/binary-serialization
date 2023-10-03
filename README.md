@@ -111,6 +111,8 @@ Unity:
 * Rect[]
 * RectInt
 * RectInt[]
+* RectOffset
+* RectOffset[]
 * Quaternion
 * Quaternion[]
 * Color
