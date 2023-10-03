@@ -1,4 +1,4 @@
-# Serializable Message
+# 💾 Binary Serialization
 
 A class and set of functions for serializing and deserializing class-content into a byte array.
 
