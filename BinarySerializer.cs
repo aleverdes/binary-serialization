@@ -212,7 +212,7 @@ namespace AleVerDes.BinarySerialization
             {
                 return DeserializeMethods[type](binaryReader);
             }
-            catch (InvalidCastException e)
+            catch (InvalidCastException)
             {
                 Debug.LogError($"Invalid cast: {type} to {DeserializeMethods[type].Method.ReturnType}");
                 throw;
