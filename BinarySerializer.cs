@@ -226,6 +226,7 @@ namespace AleVerDes.BinarySerialization
         private static void Reset()
         {
             _typeIndex = 0;
+            CachedTypes.Clear();
         }
         
         private class TypeIndexDictionary
@@ -240,6 +241,12 @@ namespace AleVerDes.BinarySerialization
             {
                 _typeToTypeIndex.Add(type, typeIndex);
                 _typeIndexToType.Add(typeIndex, type);
+            }
+
+            public void Clear()
+            {
+                _typeToTypeIndex.Clear();
+                _typeIndexToType.Clear();
             }
         }
     }
